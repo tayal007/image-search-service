@@ -1,0 +1,28 @@
+{
+  "name": "image-search-service",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./init/init.js"
+  },
+  "dependencies": {
+    "@middy/core": "1.4.0",
+    "@middy/http-error-handler": "1.4.0",
+    "@middy/http-event-normalizer": "1.4.0",
+    "@middy/http-json-body-parser": "1.4.0",
+    "@middy/validator": "1.4.0",
+    "aws-sdk": "2.760.0",
+    "cookie-parser": "1.4.4",
+    "debug": "2.6.9",
+    "ejs": "2.6.1",
+    "express": "4.16.1",
+    "express-winston": "0.3.1",
+    "http-errors": "1.6.3",
+    "ini": "1.3.5",
+    "morgan": "1.9.1",
+    "q": "2.0.3",
+    "request": "2.88.2",
+    "uuid": "8.3.0",
+    "winston": "1.0.1"
+  }
+}

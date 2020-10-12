@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Search Service</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        #theForm {
+            background-position: 10px 10px;
+            background-repeat: no-repeat;
+            width: 100%;
+            font-size: 16px;
+            padding: 12px 20px 12px 40px;
+            border: 1px solid #ddd;
+            margin-bottom: 12px;
+        }
+
+        #theTable {
+            border-collapse: collapse;
+            width: 100%;
+            border: 1px solid #ddd;
+            font-size: 18px;
+        }
+
+        #theTable th, #theTable td {
+            text-align: left;
+            padding: 12px;
+        }
+
+        #theTable tr {
+            border-bottom: 1px solid #ddd;
+        }
+
+        #theTable tr.header, #theTable tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+
+<script>
+    let page = 1;
+    let total = 0;
+    function formatParams( params ){
+        return "?" + Object
+            .keys(params)
+            .map(function(key){
+                return key+"="+encodeURIComponent(params[key])
+            })
+            .join("&")
+    }
+
+    function getUrl(page = 1) {
+        const imageDesc = document.getElementById("theDesc");
+        const isPngImage = document.getElementById("pngImage");
+        const isJpegImage = document.getElementById("jpegImage");
+        const minImageSize = document.getElementById("minImageSize");
+        const maxImageSize = document.getElementById("maxImageSize");
+
+        const params = {
+            imageType: 'none',
+            minImageSize: minImageSize.value,
+            maxImageSize: maxImageSize.value
+        };
+
+        if(isPngImage.checked && isJpegImage.checked)
+            params.imageType = 'all';
+        else if(isPngImage.checked)
+            params.imageType = 'png';
+        else if(isJpegImage.checked)
+            params.imageType = 'jpeg';
+
+        if(imageDesc.value !== undefined && imageDesc.value !== '') {
+            params.imageDesc = imageDesc.value;
+        }
+        params.page = page;
+        return '/searchImage' + formatParams(params);
+    }
+
+    function clearTable() {
+        const bodyRef = document.getElementById("theTable").getElementsByTagName('tbody')[0];
+        bodyRef.innerHTML = '<tr class="header">\n' +
+            '            <th style="width:60%;">Image Description</th>\n' +
+            '            <th style="width:60%;">Image Type</th>\n' +
+            '            <th style="width:40%;">Image Size</th>\n' +
+            '        </tr>';
+    }
+
+    function fetchDataAndAppendTable(page) {
+        const XHR = new XMLHttpRequest();
+        XHR.addEventListener( 'load', function( event ) {
+            const response = JSON.parse(XHR.responseText);
+            if(XHR.status === 200) {
+                total = response.total;
+                const table = document.getElementById("theTable");
+                response.datarows.forEach(row => {
+                    const rowElement = table.insertRow(table.rows.length);
+                    for (let idx in row) {
+                        rowElement.insertCell(idx).innerHTML = row[idx];
+                    }
+                });
+                document.getElementById("response").innerHTML = "Query returned " + total.toString() + " results :)";
+            } else if(XHR.status === 204) {
+                document.getElementById("response").innerHTML = "Search query returned 0 result :|";
+            } else {
+                if(response.message === "SIZE_QUERY_ERROR") {
+                    document.getElementById("response").innerHTML = "Min size cannot be greater than max size :P";
+                } else {
+                    document.getElementById("response").innerHTML = "Oops! Something went wrong. Please try again :(";
+                }
+            }
+            document.getElementById("loading").innerHTML = "";
+        });
+        XHR.addEventListener( 'timeout', function( event ) {
+            document.getElementById("response").innerHTML = 'Oops! Something went wrong. Please try again :(';
+            document.getElementById("loading").innerHTML = "";
+        });
+        XHR.addEventListener( 'error', function( event ) {
+            document.getElementById("response").innerHTML = 'Oops! Something went wrong. Please try again :(';
+            document.getElementById("loading").innerHTML = "";
+        });
+        XHR.open( 'GET', getUrl(page));
+        XHR.setRequestHeader("Content-Type", "application/json");
+        XHR.send();
+    }
+
+    window.addEventListener('load', function () {
+        const form = document.getElementById('theForm');
+        document.getElementById("response").innerHTML = "Searching...";
+        page = 1;
+        fetchDataAndAppendTable(page);
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            page = 1;
+            document.getElementById("response").innerHTML = "Searching...";
+            clearTable();
+            fetchDataAndAppendTable(page);
+        });
+    })
+
+    window.addEventListener("scroll", function(){
+        const table = document.getElementById('theTable');
+        const contentHeight = table.offsetHeight;
+        const yOffset = window.pageYOffset;
+        const y = yOffset + window.innerHeight;
+        if(y >= contentHeight) {
+            if(page * 20 < total) {
+                document.getElementById("loading").innerHTML = "Loading more results...";
+                page++;
+                fetchDataAndAppendTable(page);
+            }
+        }
+    })
+</script>
+<body>
+<div>
+    <p> Search for Images </p>
+</div>
+<div>
+    <form id="theForm" >
+        <label for="theDesc">Image Description: </label><input id="theDesc" type="text" name="desc">
+        <label> Image Type: </label>
+        <label for="pngImage">png: </label><input id="pngImage" type="checkbox" name="png" checked>
+        <label for="jpegImage">jpeg: </label><input id="jpegImage" type="checkbox" name="jpeg" checked>
+        <label>Image Size: </label>
+        <label for="minImageSize"> min: </label>
+        <input id="minImageSize" type="text" onkeyup="this.value=this.value.replace(/[^\d+]/,'')" value="0">
+        <label for="maxImageSize"> min: </label>
+        <input id="maxImageSize" type="text" onkeyup="this.value=this.value.replace(/[^\d+]/,'')" value="500">
+        <input id="submitBtn" type="submit" value="Filter">
+    </form>
+</div>
+
+<div id="response">
+</div>
+
+<div>
+    <table id="theTable">
+        <tr class="header">
+            <th style="width:60%;">Image Description</th>
+            <th style="width:60%;">Image Type</th>
+            <th style="width:40%;">Image Size</th>
+        </tr>
+    </table>
+</div>
+
+<div id="loading">
+</div>
+
+</body>
+
+</html>
+
+
